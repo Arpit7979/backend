@@ -48,18 +48,19 @@ const userSchema = new mongoose.Schema({
 
 userSchema.pre("save", async function(next){
     if(!this.isModified("password")) return next();
-    bcrypt.hash(this.password, 10);
+    this.password = await bcrypt.hash(this.password, 10);
     next();
 })
 
 userSchema.methods.isPasswordMatch = async function(password){
-    return bcrypt.compare(password,this.password);
+    return await bcrypt.compare(password,this.password);
 }
 
 userSchema.methods.generateSecrectToken = function(){
-    jwt.sign(
+return jwt.sign(
         {
             _id: this._id,
+            email: this.email,
             username: this.username,
             fullName: this.fullName,
         },
@@ -71,7 +72,7 @@ userSchema.methods.generateSecrectToken = function(){
 }
 
 userSchema.methods.generateRefreshToken = function(){
-    jwt.sign(
+return jwt.sign(
         {
             _id: this._id,
         },
