@@ -176,6 +176,7 @@ const logoutUser = asyncHandler(async (req, res)=>{
    )
 })
 
+//actually access token is short lived token and refresh token is long lived token so we need to refresh access token after some time and we can do this by using refresh token that we save in cookie and mongoDB database so we need to check if the refresh token is valid or not and if it is valid then we need to generate new access token and refresh token and send it to the user
 const refreshAccessToken = asyncHandler(async(req,res)=>{
   const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
@@ -207,7 +208,7 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
        secure: true,
      }
   
-     res
+     return res
      .status(200)
      .cookie("refreshToken",refreshToken,options)
      .cookie("accessToken",accessToken,options)
@@ -226,6 +227,67 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
     
   }
 
+});
+
+const changeCurrentPassword = asyncHandler(async(req,res)=>{
+    const {oldPassword,newPassword} = req.body;
+    const user = await User.findById(req.user?._id);
+    if(!user){
+        throw new ApiError(404, "User not found");
+    }
+    const isOldPasswordCorrect = await user.isPasswordMatch(oldPassword);
+    if(!isOldPasswordCorrect){
+        throw new ApiError(400, "Invalid old password");
+    }
+    user.password = newPassword;
+    await user.save({validateBeforeSave: false});
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200,{}, "Password changed successfully")
+    )
+});
+
+const getCurrentUser = asyncHandler(async(req,res)=>{
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, req.user, "User found successfully")
+    )
 })
 
-export {registerUser , loginUser, logoutUser,refreshAccessToken};
+const updateAccountDetails = asyncHandler(async(req,res)=>{
+    const {fullName,email} = req.body;
+
+    if(!fullName || !email){
+        throw new ApiError(400, "Please provide full name and email");
+    };
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set:{
+                fullName,
+                email,
+            }
+        },
+        {
+            new: true, // return updated document
+        }
+    ).select("-password");
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User updated successfully"))
+})
+
+export {
+      registerUser,
+      loginUser,
+      logoutUser,
+      refreshAccessToken,
+      changeCurrentPassword,
+      getCurrentUser,
+      updateAccountDetails,
+    };
