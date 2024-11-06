@@ -440,10 +440,17 @@ const getWatchHistory = asyncHandler(async(req,res)=>{
 										fullName:1,
 										avatar:1,
 									}
-								}
+								},
 							]
 						}
-					}
+					},
+                    {
+                        $addFields:{
+                            owner:{
+                                $first:"$owner",
+                            }
+                        }
+                    }
 				]
 			}
 		}
@@ -466,6 +473,6 @@ export {
       updateAccountDetails,
       updateUserAvatar,
       updateCoverImage,
-			getUserChannelProfile,
-			getWatchHistory,
+      getUserChannelProfile,
+      getWatchHistory,
     };
